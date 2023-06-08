@@ -9,6 +9,7 @@ packages = [{include = "special_agents"}]
 
 [tool.poetry.dependencies]
 python = "^3.10"
+python-dotenv = "^1.0.0"
 
 
 [build-system]
