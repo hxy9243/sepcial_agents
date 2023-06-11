@@ -3,7 +3,6 @@ from typing import List, Tuple, Any
 import guidance
 from langchain.agents import BaseSingleActionAgent
 from langchain.schema import AgentAction, AgentFinish
-from langchain.tools import BaseTool
 
 
 PREFIX: str = '''Answer the question with the given
@@ -41,7 +40,28 @@ Final answer: {{gen 'final answer'}}
 
 class GuidedAgent(BaseSingleActionAgent):
 
-    tools: List[BaseTool] = []
+    model: Tuple[str, str] = ()
+
+    def __init__(self, model):
+        super().__init__()
+
+        self._set_guidance_llm(*model)
+
+    @staticmethod
+    def _set_guidance_llm(model: str, model_name: str):
+        match model:
+            case 'openai':
+                llm = guidance.llms.OpenAI(model_name)
+            case 'mlal':
+                llm = guidance.llms.MSALOpenAI(model_name)
+            case 'azure':
+                llm = guidance.llms.AzureOpenAI(model_name)
+            case 'transformer':
+                llm = guidance.llms.Transformers(model_name)
+            case _:
+                raise Exception('')
+
+        guidance.llm = llm
 
     @property
     def input_keys(self):
@@ -95,4 +115,4 @@ class GuidedAgent(BaseSingleActionAgent):
     async def aplan(self,
                     intermediate_steps: List[Tuple[AgentAction, str]],
                     **kwargs: Any):
-        raise NotImplementedError("Async not implemented")
+        raise NotImplementedError('Async not implemented')
