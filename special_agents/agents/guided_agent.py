@@ -25,6 +25,7 @@ Thought: I now know the final answer
 Final Answer: the final answer to the original input question.'''
 
 SUFFIX: str = '''
+Begin!
 Let's think about the question step by step.
 Question: {{question}}{{agent_scratchpad}}
 Any follow up actions needed? {{#select 'follow-up'}}Yes{{or}}No{{/select}}
@@ -64,26 +65,31 @@ class GuidedAgent(BaseSingleActionAgent):
         question = kwargs['question']
         agent_scratchpad = self._construct_scratchpad(intermediate_steps)
 
-        result = _guidance(tools_description=tools_description,
-                           tool_names=tools_name,
-                           question=question,
-                           agent_scratchpad=agent_scratchpad)
+        result = _guidance(
+            caching=False,
+            tools_description=tools_description,
+            tool_names=tools_name,
+            question=question,
+            agent_scratchpad=agent_scratchpad,)
         if result['follow-up'] == 'No':
-            return AgentFinish({'output': result['final answer']},
+            return AgentFinish({'output': result['final answer'].strip()},
                                log='Action Finished: ')
         else:
-            return AgentAction(tool=result['action'].strip(),
-                               tool_input=result['tool input'].strip(),
-                               log='Agent Action: ')
+            action = result['action'].strip()
+            action_input = result['tool input'].strip()
+
+            return AgentAction(tool=action,
+                               tool_input=action_input,
+                               log='Agent Action:')
 
     def _construct_scratchpad(self,
                               intermediate_steps: List[Tuple[AgentAction, str]]
                               ) -> str:
         thoughts = []
         for action, observation in intermediate_steps:
-            thoughts.append(action.log + '\n' +
-                            "Observation: " + str(observation))
-
+            thoughts.append(f'{action.log}: {action.tool}\n' +
+                            f'Action Input: ```{action.tool_input}```\n'
+                            f'Observation: {observation}')
         return '\n'.join(thoughts)
 
     async def aplan(self,
